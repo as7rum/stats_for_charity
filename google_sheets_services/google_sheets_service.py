@@ -40,6 +40,7 @@ class GoogleSheetsService:
 
     def update_data(self,chosen_list: str, row_id: int, values: list):
         service = self.__create_service()
+        row_id += 2
         range = f'{chosen_list}!A{row_id}:Z{row_id}'
         values_for_adding = service.spreadsheets().values().batchUpdate(
         spreadsheetId=self.spreadsheet_id,
@@ -59,7 +60,7 @@ class GoogleSheetsService:
                 self.creds_file,
                 self.SCOPES
                 ).authorize(httplib2.Http())
-        return build('sheets', 'v4', http=creds_service)
+        return build('sheets', 'v4', http=creds_service)#, cache_discovery=False)
 
     def __get_values_from_server(self, service):
         return service.spreadsheets().values()

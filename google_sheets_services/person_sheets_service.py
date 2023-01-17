@@ -16,9 +16,16 @@ class PersonSheetsService(GoogleSheetsService):
     def get_person(self, user_id: str) -> Person:
         id = str(user_id)
         values = self.get_persons()
-        person_data = next(filter(lambda x: x.id == id, values), None)
-        if person_data:
-            person = Person(person_data)
+        person = next(filter(lambda x: x.id == id, values), None)
+        if person:
+            #person = Person(person_data)
+            return person
+
+    def get_person_by_username(self, username: str) -> Person:
+        username = str(username)
+        values = self.get_persons()
+        person = next(filter(lambda x: x.username == username, values), None)
+        if person:
             return person
 
     def get_person_row(self, user_id: str):
@@ -30,5 +37,5 @@ class PersonSheetsService(GoogleSheetsService):
     def add_person(self, person: Person):
         super().add_data('persons', person.get_values_list())
 
-    def person_data_update(person: Person):
+    def person_data_update(self, person: Person):
         super().update_data('persons', person.row_id, person.get_values_list())

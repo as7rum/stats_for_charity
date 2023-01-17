@@ -5,9 +5,14 @@ from aiogram import Bot, Dispatcher
 from config.bot_config import API_TOKEN
 from handlers import profile, start_command_and_profile_creation
 
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher()
+
+async def send_message(id: str, message):
+    await bot.send_message(id, message)
+
+
 async def main():
-    bot = Bot(token=API_TOKEN)
-    dp = Dispatcher()
 
     logging.basicConfig(
         level=logging.INFO,

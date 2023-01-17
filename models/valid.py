@@ -11,15 +11,17 @@ def is_valid(pattern, input: str):
 
 def valid_date(dd: int, mm: int, yyyy: int) -> bool:
     if 1<=int(dd)<=31 and 1<=int(mm)<=12 and 1970<=int(yyyy)<=2022:
-        return True 
+        return 
 
 def age(birthdate: str) -> int:
-    today = date.today()
-    birthdate = datetime.strptime(birthdate, '%d.%m.%Y').date()
-    one_or_zero = ((today.month, today.day) < (birthdate.month, birthdate.day))
-    year_difference = today.year - birthdate.year
-    return year_difference - one_or_zero
-
+    try:
+        today = date.today()
+        birthdate = datetime.strptime(birthdate, '%d.%m.%Y').date()
+        one_or_zero = ((today.month, today.day) < (birthdate.month, birthdate.day))
+        year_difference = today.year - birthdate.year
+        return year_difference - one_or_zero
+    except:
+        return
 
 
 # print(valid_date(*(is_valid(r'^(\d{2})\.(\d{2})\.(\d{4})$', '32.10.1998'))))
