@@ -1,7 +1,9 @@
-from aiogram import Router
+from aiogram import Router, types, F
 from aiogram.filters.text import Text
 from aiogram.filters.command import Command
 from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.exceptions import TelegramBadRequest
+from aiogram import html
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -14,22 +16,11 @@ from typing import Optional
 from google_sheets_services.person_sheets_service import PersonSheetsService
 from models.person import Person
 from models.valid import age
+from bot import send_message
 from config.messages import START_COMMAND_MESSAGE
 
 router = Router()  # [1]
 
-@router.message(Text(text="профиль", ignore_case=True))
-async def send_profile(message: Message):
-    person_data = PersonSheetsService()
-    person = person_data.get_person(message.from_user.id)
-    pprint.pprint (person)
-    profile_message = f'''
-Имя: {person.name} ({person.job_title})
-Дата рождения: {person.birthdate}
-Лидер: {person.chief}
-Описание: {person.description}
-    '''
-    await message.answer(profile_message)
 
 def person_current_profile(person: Person()):
     
@@ -40,41 +31,92 @@ def person_current_profile(person: Person()):
         if chief.name:
             return f'''Вот так твой профиль выглядит сейчас✨
 
-Привет, меня зовут {person.name} ({person.job_title})! 
-
-Возраст: {age(person.birthdate)}
-
-Наставник: {chief.name}
-
-Немного обо мне:
-{person.description}'''
+Всем, привет! Меня зовут <b>{person.name}</b>.
+<i>Занимаемая позиция</i>: <b>{person.job_title}</b>
+<i>Возраст</i>: <b>{age(person.birthdate)}</b>
+<i>Наставник</i>: <b>{chief.name}</b>
+<i>Немного обо мне</i>:
+<b>{person.description}</b>'''
     except:
         return f'''Вот так твой профиль выглядит сейчас✨
 
-Привет, меня зовут {person.name} ({person.job_title})! 
-
-Возраст: {age(person.birthdate)}
-
-Наставник: {person.chief}
-
-Немного обо мне:
-{person.description}'''
+Всем, привет! Меня зовут <b>{person.name}</b>.
+<i>Занимаемая позиция</i>: <b>{person.job_title}</b>
+<i>Возраст</i>: <b>{age(person.birthdate)}</b>
+<i>Наставник</i>: <b>{person.chief}</b>
+<i>Немного обо мне</i>:
+<b>{person.description}</b>'''
 
 
 class ProfileCallback(CallbackData, prefix="profile_callbacks"):
     action: str
-    value: Optional[str]
+    # value: Optional[str]
 
-class Profile(Person):
-
-    def __init__(self):
-        pass
-
-    def get_keyboard(buttons: list, buttons_in_row: int):
+def get_keyboard():
         builder = InlineKeyboardBuilder()
-        builder.button(text="Изменить профиль", callback_data=ProfileCallback(action="change_profile", value="Изменить профиль"))
-        builder.button(text="Статистика", callback_data=ProfileCallback(action="statistics", value="Статистика"))
-        builder.button(text="Сделки", callback_data=ProfileCallback(action="deals", value="Сделки"))
-        builder.button(text="Команда", callback_data=ProfileCallback(action="team", value="Команда"))
+        builder.button(text="Изменить профиль", callback_data=ProfileCallback(action="change_profile"))#, value="Изменить профиль"))
+        builder.button(text="Статистика", callback_data=ProfileCallback(action="statistics"))#, value="Статистика"))
+        builder.button(text="Сделки", callback_data=ProfileCallback(action="deals"))#, value="Сделки"))
+        builder.button(text="Команда", callback_data=ProfileCallback(action="team"))#, value="Команда"))
         builder.adjust(2)
         return builder.as_markup()
+
+def profile(username: str):
+    global person_profile
+
+    service = PersonSheetsService()
+    person = service.get_person_by_username(username)
+    person_chief = service.get_person_by_username(person.chief)
+    person_profile = f'''
+Всем, привет! Меня зовут <b>{person.name}</b>.
+<i>Занимаемая позиция</i>: <b>{person.job_title}</b>
+<i>Возраст</i>: <b>{age(person.birthdate)}</b>
+<i>Наставник</i>: <b>{person_chief.name}</b>
+<i>Немного обо мне</i>:
+<b>{person.description}</b>'''
+    return person_profile
+
+async def update_profile(message: types.Message, new_text: str):
+    with suppress(TelegramBadRequest):
+        
+        builder = InlineKeyboardBuilder()
+        builder.button(text="Назад", callback_data=ProfileCallback(action="back"))
+
+        await message.edit_text(
+            new_text,
+            reply_markup=builder.as_markup()
+        )
+
+async def send_profile(username, chat_id):
+    person_profile = profile(username)
+    await send_message(chat_id, person_profile, parse_mode="HTML", reply_markup=get_keyboard())
+
+# @router.message(Command('start'))
+# async def start_cmd(message: types.Message):
+#     await send_profile(message.from_user.username, message.from_user.id)
+
+@router.callback_query(ProfileCallback.filter(F.action == "change_profile"))
+async def callbacks_change_profile(callback: types.CallbackQuery, callback_data: ProfileCallback):
+    await update_profile(callback.message, 'Здесь должны быть функции для изменения профиля')
+    await callback.answer(text="Переходим в настройки профиля.")
+
+@router.callback_query(ProfileCallback.filter(F.action == "statistics"))
+async def callbacks_statistics(callback: types.CallbackQuery, callback_data: ProfileCallback):
+    await update_profile(callback.message, 'Здесь должна быть статистика')
+    await callback.answer(text="Открываем статистику.")
+
+@router.callback_query(ProfileCallback.filter(F.action == "deals"))
+async def callbacks_deals(callback: types.CallbackQuery, callback_data: ProfileCallback):
+    await update_profile(callback.message, 'Здесь должны быть сделки')
+    await callback.answer(text="Открываем сделки.")
+
+@router.callback_query(ProfileCallback.filter(F.action == "team"))
+async def callbacks_team(callback: types.CallbackQuery, callback_data: ProfileCallback):
+    await update_profile(callback.message, 'Здесь должен быть список членов команды')
+    await callback.answer(text="Загружаем всех членов команды.")
+
+@router.callback_query(ProfileCallback.filter(F.action == "back"))
+async def callbacks_back_com(callback: types.CallbackQuery, callback_data: ProfileCallback):
+    await callback.message.edit_text(person_profile, parse_mode='HTML', reply_markup=get_keyboard())
+    await callback.answer(text="Эта функция пока не доступна.")
+

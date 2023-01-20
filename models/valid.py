@@ -11,7 +11,7 @@ def is_valid(pattern, input: str):
 
 def valid_date(dd: int, mm: int, yyyy: int) -> bool:
     if 1<=int(dd)<=31 and 1<=int(mm)<=12 and 1970<=int(yyyy)<=2022:
-        return 
+        return not not dd
 
 def age(birthdate: str) -> int:
     try:

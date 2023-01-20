@@ -14,7 +14,7 @@ from typing import Optional
 
 from google_sheets_services.person_sheets_service import PersonSheetsService
 from bot import send_message
-from handlers.profile import person_current_profile
+from handlers.profile import person_current_profile, send_profile
 from models.person import Person
 from models.valid import is_valid, valid_date, age
 from config.messages import (START_COMMAND_MESSAGE, ADD_NAME_MESSAGE, 
@@ -46,7 +46,7 @@ async def cmd_start(message: Message, state: FSMContext):
         person.username = message.from_user.username
         await message.answer(START_COMMAND_MESSAGE)
         sleep(1)
-        await message.answer(person_current_profile(person))
+        await message.answer(person_current_profile(person), parse_mode='HTML')
         sleep(1)
         await message.answer(ADD_NAME_MESSAGE, reply_markup= types.ForceReply(
         input_field_placeholder= 'Имя Фамилия'))
@@ -54,7 +54,9 @@ async def cmd_start(message: Message, state: FSMContext):
     else:
         await message.answer(
             f"Привет, {person.name}! Рад снова тебя видеть.")
-        await message.answer(person_current_profile(person))
+        #router.message.register()
+        # await send_profile(message.from_user.username, message.from_user.id)
+        await message.answer(person_current_profile(person), parse_mode="HTML")
 
 
 accept = ['подтвердить']
@@ -95,7 +97,7 @@ async def check_add_name(message: Message, state: FSMContext):
     await message.answer('Ага, отлично!', 
     reply_markup = types.ReplyKeyboardRemove())
     sleep(1)
-    await message.answer(person_current_profile(person))
+    await message.answer(person_current_profile(person), parse_mode='HTML')
     await message.answer(ADD_BIRTDATE_MESSAGE, reply_markup= types.ForceReply(
     input_field_placeholder= 'ДД.ММ.ГГГГ'))
     await state.set_state(AddNewUser.add_birthdate)
@@ -126,7 +128,7 @@ async def check_add_birthdate(message: Message, state: FSMContext):
     await message.answer('Все, хорошо!', 
     reply_markup = types.ReplyKeyboardRemove())
     sleep(1)
-    await message.answer(person_current_profile(person))
+    await message.answer(person_current_profile(person), parse_mode='HTML')
     await message.answer(ADD_CHIEF_MESSAGE, reply_markup= types.ForceReply(
     input_field_placeholder= '@username'))
     await state.set_state(AddNewUser.add_chief)
@@ -200,7 +202,7 @@ async def check_add_chief(message: Message, state: FSMContext):
     await message.answer('Отлично!', 
     reply_markup = types.ReplyKeyboardRemove())
     sleep(1)
-    await message.answer(person_current_profile(person))
+    await message.answer(person_current_profile(person), parse_mode='HTML')
     sleep(1)
     await message.answer(ADD_JOB_TITLE_MESSAGE)
     await message.answer("Ваша позиция: ", reply_markup=get_keyboard())
@@ -247,5 +249,6 @@ async def add_job_title(message: Message, state: FSMContext):
         await message.answer('Поздравляю! Вы завершили заполнение профиля!')
     except:
         pass
-    await message.answer(person_current_profile(person))
+    # await send_profile(message.from_user.username, message.from_user.id)
+    await message.answer(person_current_profile(person), parse_mode="HTML")
     await state.clear()
