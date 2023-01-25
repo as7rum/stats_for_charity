@@ -13,8 +13,8 @@ from contextlib import suppress
 from typing import Optional
 
 from google_sheets_services.person_sheets_service import PersonSheetsService
-from bot import send_message
-from handlers.profile import person_current_profile, send_profile
+from bot import bot
+from handlers.profile import person_current_profile, profile
 from models.person import Person
 from models.valid import is_valid, valid_date, age
 from config.messages import (START_COMMAND_MESSAGE, ADD_NAME_MESSAGE, 
@@ -34,6 +34,20 @@ class AddNewUser(StatesGroup):
     add_description = State()
 
 person = Person()
+
+class ProfileCallback(CallbackData, prefix="profile_callbacks"):
+    action: str
+    # value: Optional[str]
+
+def get_profile_keyboard():
+        builder = InlineKeyboardBuilder()
+        builder.button(text="Изменить профиль", callback_data=ProfileCallback(action="change_profile"))#, value="Изменить профиль"))
+        builder.button(text="Статистика", callback_data=ProfileCallback(action="statistics"))#, value="Статистика"))
+        builder.button(text="Сделки", callback_data=ProfileCallback(action="deals"))#, value="Сделки"))
+        builder.button(text="Команда", callback_data=ProfileCallback(action="team"))#, value="Команда"))
+        builder.adjust(2)
+        return builder.as_markup()
+
 
 @router.message(Command("start"))  # [2]
 async def cmd_start(message: Message, state: FSMContext):
@@ -55,8 +69,10 @@ async def cmd_start(message: Message, state: FSMContext):
         await message.answer(
             f"Привет, {person.name}! Рад снова тебя видеть.")
         #router.message.register()
-        # await send_profile(message.from_user.username, message.from_user.id)
-        await message.answer(person_current_profile(person), parse_mode="HTML")
+        person_profile = profile(person.username)
+        await bot.send_message(message.from_user.id, person_profile, 
+        parse_mode="HTML", reply_markup=get_profile_keyboard())
+        # await message.answer(person_current_profile(person), parse_mode="HTML")
 
 
 accept = ['подтвердить']
@@ -231,11 +247,11 @@ async def callbacks_job_title_finish(callback: types.CallbackQuery, state: FSMCo
     await callback.answer()
     await state.set_state(AddNewUser.add_description)
     sleep(1)
-    await send_message(callback.from_user.id, '''
+    await bot.send_message(callback.from_user.id, '''
     Теперь давай добавим какое-нибудь описание. Напиши что-нибудь о себе и отправь мне.''')
 
 @router.message(AddNewUser.add_description)
-async def add_job_title(message: Message, state: FSMContext):
+async def add_description(message: Message, state: FSMContext):
     global person
     global chief_person
 
@@ -244,11 +260,13 @@ async def add_job_title(message: Message, state: FSMContext):
     service.add_person(person)
     service.person_data_update(chief_person)
     try:
-        await  send_message(chief_person.id, f'''
+        await  bot.send_message(chief_person.id, f'''
         Поздравляю, {person.name} теперь в вашей команде!''')
         await message.answer('Поздравляю! Вы завершили заполнение профиля!')
     except:
         pass
-    # await send_profile(message.from_user.username, message.from_user.id)
-    await message.answer(person_current_profile(person), parse_mode="HTML")
+    person_profile = profile(person.username)
+    await bot.send_message(message.from_user.id, person_profile, 
+        parse_mode="HTML", reply_markup=get_profile_keyboard())
+    # await message.answer(person_current_profile(person), parse_mode="HTML")
     await state.clear()
