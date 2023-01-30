@@ -18,7 +18,7 @@ from handlers.profile import person_current_profile, profile
 from models.person import Person
 from models.valid import is_valid, valid_date, age
 from config.messages import (START_COMMAND_MESSAGE, ADD_NAME_MESSAGE, 
-ADD_NAME_ERROR_MESSAGE, ADD_BIRTDATE_MESSAGE, ADD_BIRTDATE_ERROR_MESSAGE, 
+ADD_NAME_ERROR_MESSAGE, ADD_BIRTHDATE_MESSAGE, ADD_BIRTHDATE_ERROR_MESSAGE, 
 ADD_CHIEF_MESSAGE, ADD_CHIEF_ERROR_MESSAGE, ADD_JOB_TITLE_MESSAGE)
 
 router = Router()  # [1]
@@ -114,7 +114,7 @@ async def check_add_name(message: Message, state: FSMContext):
     reply_markup = types.ReplyKeyboardRemove())
     sleep(1)
     await message.answer(person_current_profile(person), parse_mode='HTML')
-    await message.answer(ADD_BIRTDATE_MESSAGE, reply_markup= types.ForceReply(
+    await message.answer(ADD_BIRTHDATE_MESSAGE, reply_markup= types.ForceReply(
     input_field_placeholder= 'ДД.ММ.ГГГГ'))
     await state.set_state(AddNewUser.add_birthdate)
 
@@ -128,7 +128,7 @@ async def add_birthdate(message: Message, state: FSMContext):
             reply_markup = check_keyboard)
             await state.set_state(AddNewUser.check_add_birthdate)
             return
-    await message.answer(ADD_BIRTDATE_ERROR_MESSAGE)
+    await message.answer(ADD_BIRTHDATE_ERROR_MESSAGE)
     await state.set_state(AddNewUser.add_birthdate)
 
 @router.message(AddNewUser.check_add_birthdate, F.text.lower().in_(another))
