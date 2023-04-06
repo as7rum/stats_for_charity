@@ -6,7 +6,7 @@ class Person:
     username = None
     name = None
     birthdate = None
-    chief = None
+    chief: 'Person' = None
     job_title = None
     description = None
     team = None

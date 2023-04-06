@@ -33,7 +33,8 @@ class AddNewUser(StatesGroup):
     add_job_title = State()
     add_description = State()
 
-person = Person()
+# person = Person()
+person_dict = {}
 
 class ProfileCallback(CallbackData, prefix="profile_callbacks"):
     action: str
@@ -41,17 +42,17 @@ class ProfileCallback(CallbackData, prefix="profile_callbacks"):
 
 def get_profile_keyboard():
         builder = InlineKeyboardBuilder()
-        builder.button(text="Изменить профиль", callback_data=ProfileCallback(action="change_profile"))#, value="Изменить профиль"))
-        builder.button(text="Статистика", callback_data=ProfileCallback(action="statistics"))#, value="Статистика"))
-        builder.button(text="Сделки", callback_data=ProfileCallback(action="deals"))#, value="Сделки"))
-        builder.button(text="Команда", callback_data=ProfileCallback(action="team"))#, value="Команда"))
+        builder.button(text="Изменить профиль", callback_data=ProfileCallback(action="change_profile"))
+        builder.button(text="Статистика", callback_data=ProfileCallback(action="statistics"))
+        builder.button(text="Сделки", callback_data=ProfileCallback(action="deals"))
+        builder.button(text="Команда", callback_data=ProfileCallback(action="team"))
         builder.adjust(2)
         return builder.as_markup()
 
 
 @router.message(Command("start"))  # [2]
 async def cmd_start(message: Message, state: FSMContext):
-    global person
+    # global person
     service = PersonSheetsService()
     person = service.get_person(message.from_user.id)
     if person == None:
@@ -65,14 +66,13 @@ async def cmd_start(message: Message, state: FSMContext):
         await message.answer(ADD_NAME_MESSAGE, reply_markup= types.ForceReply(
         input_field_placeholder= 'Имя Фамилия'))
         await state.set_state(AddNewUser.add_name)
+        person_dict[message.from_user.id] = person
     else:
         await message.answer(
             f"Привет, {person.name}! Рад снова тебя видеть.")
-        #router.message.register()
         person_profile = profile(person.username)
         await bot.send_message(message.from_user.id, person_profile, 
         parse_mode="HTML", reply_markup=get_profile_keyboard())
-        # await message.answer(person_current_profile(person), parse_mode="HTML")
 
 
 accept = ['подтвердить']
@@ -90,7 +90,8 @@ check_keyboard = types.ReplyKeyboardMarkup(
 
 @router.message(AddNewUser.add_name)
 async def add_name(message: Message, state: FSMContext):
-    global person
+    # global person
+    person = person_dict[message.from_user.id]
     if is_valid(r'^([А-Я][а-я]*[ ]?){1,3}$', message.text):
         person.name = message.text
         await message.answer(f'Тебя зовут {person.name}. Хочешь подтвердить? Или введешь имя заново?',
@@ -108,7 +109,8 @@ async def check_add_another_name(message: Message, state: FSMContext):
 
 @router.message(AddNewUser.check_add_name, F.text.lower().in_(accept))
 async def check_add_name(message: Message, state: FSMContext):
-    global person
+    # global person
+    person = person_dict[message.from_user.id]
 
     await message.answer('Ага, отлично!', 
     reply_markup = types.ReplyKeyboardRemove())
@@ -120,7 +122,8 @@ async def check_add_name(message: Message, state: FSMContext):
 
 @router.message(AddNewUser.add_birthdate)
 async def add_birthdate(message: Message, state: FSMContext):
-    global person
+    # global person
+    person = person_dict[message.from_user.id]
     if is_valid(r'^(\d{2})\.(\d{2})\.(\d{4})$', message.text):
         if valid_date(*message.text.split('.')):
             person.birthdate = message.text
@@ -139,7 +142,8 @@ async def check_add_another_birthdate(message: Message, state: FSMContext):
 
 @router.message(AddNewUser.check_add_birthdate, F.text.lower().in_(accept))
 async def check_add_birthdate(message: Message, state: FSMContext):
-    global person
+    # global person
+    person = person_dict[message.from_user.id]
 
     await message.answer('Все, хорошо!', 
     reply_markup = types.ReplyKeyboardRemove())
@@ -151,8 +155,9 @@ async def check_add_birthdate(message: Message, state: FSMContext):
 
 @router.message(AddNewUser.add_chief)
 async def add_chief(message: Message, state: FSMContext):
-    global person
-    global chief_person
+    # global person
+    # global chief_person
+    person = person_dict[message.from_user.id]
 
     service = PersonSheetsService()
     if is_valid(r'^@\w*$', message.text):
@@ -161,7 +166,7 @@ async def add_chief(message: Message, state: FSMContext):
         chief_person = service.get_person_by_username(chief_username)
         if chief_person:
             # Добавить person в список team
-            person.chief = chief_username
+            person.chief = chief_person
             if chief_person.team:
                 chief_team = chief_person.team.split(',')[:-1]
                 team_list = chief_team
@@ -213,7 +218,8 @@ async def update_job_title(message: types.Message, new_value: str):
 
 @router.message(AddNewUser.check_add_chief, F.text.lower().in_(accept))
 async def check_add_chief(message: Message, state: FSMContext):
-    global person
+    # global person
+    person = person_dict[message.from_user.id]
 
     await message.answer('Отлично!', 
     reply_markup = types.ReplyKeyboardRemove())
@@ -239,7 +245,8 @@ async def callbacks_job_title_change(callback: types.CallbackQuery, callback_dat
 @router.callback_query(JobTitleCallback.filter(F.action == "finish"), AddNewUser.add_job_title)
 async def callbacks_job_title_finish(callback: types.CallbackQuery, state: FSMContext):
     # Текущее значение
-    global person
+    # global person
+    person = person_dict[callback.from_user.id]
     user_value = user_data.get(callback.from_user.id, '')
     person.job_title = user_value
 
@@ -252,8 +259,14 @@ async def callbacks_job_title_finish(callback: types.CallbackQuery, state: FSMCo
 
 @router.message(AddNewUser.add_description)
 async def add_description(message: Message, state: FSMContext):
-    global person
-    global chief_person
+    # global person
+    # print(person_dict)
+    person = person_dict[message.from_user.id]
+    chief_person = person.chief
+    person.chief = chief_person.username
+    # print(chief_person)
+    # print(person.get_values_list())
+    # print(chief_person.get_values_list())
 
     person.description = message.text
     service = PersonSheetsService()
@@ -269,4 +282,7 @@ async def add_description(message: Message, state: FSMContext):
     await bot.send_message(message.from_user.id, person_profile, 
         parse_mode="HTML", reply_markup=get_profile_keyboard())
     # await message.answer(person_current_profile(person), parse_mode="HTML")
+    if message.from_user.id in person_dict.keys():
+        del person_dict[message.from_user.id]
+    print(person_dict)
     await state.clear()

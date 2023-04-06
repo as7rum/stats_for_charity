@@ -42,7 +42,7 @@ def person_current_profile(person: Person()):
 Всем, привет! Меня зовут <b>{person.name}</b>.
 <i>Занимаемая позиция</i>: <b>{person.job_title}</b>
 <i>Возраст</i>: <b>{age(person.birthdate)}</b>
-<i>Наставник</i>: <b>{person.chief}</b>
+<i>Наставник</i>: <b>{'None' if person.chief == None else person.chief.username}</b>
 <i>Немного обо мне</i>:
 <b>{person.description}</b>'''
 
@@ -123,7 +123,8 @@ async def callbacks_change_profile(callback: types.CallbackQuery, callback_data:
     await callback.answer(text="Переходим в настройки профиля.")
 
 @router.callback_query(ProfileCallback.filter(F.action == "back"))
-async def callbacks_back_command(callback: types.CallbackQuery, callback_data: ProfileCallback):
+async def callbacks_back_command(callback: types.CallbackQuery, callback_data: ProfileCallback, state: FSMContext):
+    await state.clear()
     await callback.message.edit_text(person_profile, parse_mode='HTML', reply_markup=get_profile_keyboard())
     await callback.answer(text="Возвращаемся назад.")
 

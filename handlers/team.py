@@ -1,5 +1,6 @@
 from aiogram import Router, types, F
 from handlers.profile import ProfileCallback, update_profile
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 router = Router()
 

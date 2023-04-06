@@ -18,7 +18,6 @@ class PersonSheetsService(GoogleSheetsService):
         values = self.get_persons()
         person = next(filter(lambda x: x.id == id, values), None)
         if person:
-            #person = Person(person_data)
             return person
 
     def get_person_by_username(self, username: str) -> Person:
